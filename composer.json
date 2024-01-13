@@ -1,0 +1,21 @@
+{
+  "name": "anwarachilles/nirvana-native-php",
+  "description": "Lightweight & simple PHP Rest Http",
+  "type": "library",
+  "license": "MIT",
+  "version": "1.0.1",
+  "autoload": {
+      "psr-4": {
+          "AnwarAchilles\\": "src/"
+      }
+  },
+  "authors": [
+      {
+          "name": "AnwarAchilles",
+          "email": "hudorianwar07@gmail.com"
+      }
+  ],
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "require": {}
+}
