@@ -48,7 +48,7 @@ Nirvana::rest('GET', 'demo', function() {
 | `baseurl` | `string` | **Required** set default baseurl from the project |
 
 
-#### Nirvana inner Rest
+#### Nirvana inside Rest
 
 | Method & Properties | Type  | Description |
 | :-------- | :------- | :------------------------- |
