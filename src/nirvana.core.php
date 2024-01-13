@@ -1,6 +1,10 @@
 <?php
 
-
+/**
+ * The core class for Nirvana.
+ *
+ * @class NirvanaCore
+ */
 class NirvanaCore {
 
   public static $version = 1.1;
@@ -27,11 +31,26 @@ class NirvanaCore {
 
   
 
+  /**
+   * Checks if a string is a valid JSON.
+   *
+   * @param string $string The string to be checked.
+   * @return bool Returns true if the string is valid JSON, false otherwise.
+   */
   public static function _isJson($string) {
     json_decode($string);
     return json_last_error() === JSON_ERROR_NONE;
   }
 
+  /**
+   * Sets the service.
+   *
+   * This function loops through the $Service array and checks if each function exists.
+   * If a function does not exist, it is called.
+   *
+   * @throws Some_Exception_Class description of exception
+   * @return void
+   */
   public static function setService() {
     foreach (self::$Service as $name => $funct) {
       if (!function_exists($name)) {
@@ -40,6 +59,13 @@ class NirvanaCore {
     }
   }
 
+  /**
+   * Set the HTTP method, route, and request parameters.
+   *
+   * @param mixed $Configure The configuration options.
+   * @throws Some_Exception_Class The exception that can be thrown.
+   * @return void
+   */
   public static function setMethod( $Configure ) {
     if ($_SERVER['REQUEST_METHOD']) {
       self::$request = $_SERVER['REQUEST_METHOD'];
@@ -72,6 +98,11 @@ class NirvanaCore {
     }
   }
 
+  /**
+   * Set the response for the given environment.
+   *
+   * @param array $env The environment array.
+   */
   public static function setResponse( $env ) {
     $Configure = $env['Configure'];
 
