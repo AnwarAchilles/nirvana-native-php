@@ -69,31 +69,36 @@ class NirvanaCore {
   public static function setMethod( $Configure ) {
     if ($_SERVER['REQUEST_METHOD']) {
       self::$request = $_SERVER['REQUEST_METHOD'];
+      $ROUTE = "";
+      
       if (isset($_SERVER['QUERY_STRING'])) {
         $ROUTE = urldecode($_SERVER['QUERY_STRING']);
+      }
+      if (isset($_SERVER['REQUEST_URI'])) {
+        $ROUTE = urldecode($_SERVER['REQUEST_URI']);
+      }
 
-        $parse_url_2 = parse_url($ROUTE);
-        if (isset($parse_url_2['path'])) {
-          self::$route = ltrim($parse_url_2['path'], '/');
-        }
-        if (self::_isJson(file_get_contents('php://input'))) {
-          self::$method = json_decode(file_get_contents('php://input'), true);
-        }else {
-          parse_str(file_get_contents('php://input'), self::$method);
-        }
-        
-        $QUERY = ltrim(strchr(urldecode($_SERVER['REQUEST_URI']), '?'), '?');
-        if (str_contains($QUERY, '?')) {
-          parse_str($QUERY, self::$method);
-        }
-        
-        if (count($_POST)!==0) {
-          self::$method = $_POST;
-        }
+      $parse_url_2 = parse_url($ROUTE);
+      if (isset($parse_url_2['path'])) {
+        self::$route = ltrim($parse_url_2['path'], '/');
+      }
+      if (self::_isJson(file_get_contents('php://input'))) {
+        self::$method = json_decode(file_get_contents('php://input'), true);
+      }else {
+        parse_str(file_get_contents('php://input'), self::$method);
+      }
+      
+      $QUERY = ltrim(strchr(urldecode($_SERVER['REQUEST_URI']), '?'), '?');
+      if (str_contains($QUERY, '?')) {
+        parse_str($QUERY, self::$method);
+      }
+      
+      if (count($_POST)!==0) {
+        self::$method = $_POST;
+      }
 
-        if (isset($parse_url_2['query'])) {
-          parse_str($parse_url_2['query'], NirvanaCore::$method);
-        }
+      if (isset($parse_url_2['query'])) {
+        parse_str($parse_url_2['query'], NirvanaCore::$method);
       }
     }
   }

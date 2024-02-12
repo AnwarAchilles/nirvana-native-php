@@ -3,7 +3,7 @@
   "description": "Lightweight & simple PHP Rest Http",
   "type": "library",
   "license": "MIT",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "autoload": {
       "psr-4": {
           "AnwarAchilles\\": "src/"
