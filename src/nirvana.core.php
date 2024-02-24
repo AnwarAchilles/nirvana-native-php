@@ -66,6 +66,50 @@ class NirvanaCore {
    * @throws Some_Exception_Class The exception that can be thrown.
    * @return void
    */
+  // public static function setMethod($Configure) {
+  //   // Pastikan hanya menjalankan logika jika metode HTTP tersedia
+  //   if ($_SERVER['REQUEST_METHOD']) {
+  //     self::$request = $_SERVER['REQUEST_METHOD'];
+
+  //     // Mengambil URI dan QUERY_STRING
+  //     $URI = urldecode($_SERVER['REQUEST_URI']);
+  //     $QUERY_STRING = isset($_SERVER['QUERY_STRING']) ? urldecode($_SERVER['QUERY_STRING']) : '';
+
+  //     // Mencari rute yang diinginkan
+  //     $ROUTE = ($QUERY_STRING !== '') ? str_replace("?" . $QUERY_STRING, "", $URI) : $URI;
+  //     self::$route = ltrim($ROUTE, '/');
+
+  //     // Memproses data metode
+  //     switch ($_SERVER['REQUEST_METHOD']) {
+  //       case 'GET':
+  //         // Logika pengambilan data untuk metode GET jika diperlukan
+  //         break;
+  //       case 'POST':
+  //         if (count($_POST) !== 0) {
+  //             self::$method = $_POST;
+  //         } else {
+  //             self::$method = json_decode(file_get_contents('php://input'), true);
+  //         }
+  //         break;
+  //       case 'PUT':
+  //       case 'PATCH':
+  //         parse_str(file_get_contents('php://input'), self::$method);
+  //         break;
+  //       case 'DELETE':
+  //         // Logika pengambilan data untuk metode DELETE jika diperlukan
+  //         break;
+  //       default:
+  //         // Metode HTTP tidak didukung
+  //         break;
+  //     }
+
+  //     // Menangani QUERY_STRING
+  //     if ($QUERY_STRING !== '') {
+  //       parse_str($QUERY_STRING, self::$method);
+  //     }
+  //   }
+  // }
+
   public static function setMethod( $Configure ) {
     if ($_SERVER['REQUEST_METHOD']) {
       self::$request = $_SERVER['REQUEST_METHOD'];
@@ -73,11 +117,10 @@ class NirvanaCore {
       
       if (isset($_SERVER['QUERY_STRING'])) {
         $ROUTE = urldecode($_SERVER['QUERY_STRING']);
-      }
-      if (isset($_SERVER['REQUEST_URI'])) {
+      }else if (isset($_SERVER['REQUEST_URI'])) {
         $ROUTE = urldecode($_SERVER['REQUEST_URI']);
       }
-
+      
       $parse_url_2 = parse_url($ROUTE);
       if (isset($parse_url_2['path'])) {
         self::$route = ltrim($parse_url_2['path'], '/');

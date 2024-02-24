@@ -73,11 +73,10 @@ class NirvanaCore {
       
       if (isset($_SERVER['QUERY_STRING'])) {
         $ROUTE = urldecode($_SERVER['QUERY_STRING']);
-      }
-      if (isset($_SERVER['REQUEST_URI'])) {
+      }else if (isset($_SERVER['REQUEST_URI'])) {
         $ROUTE = urldecode($_SERVER['REQUEST_URI']);
       }
-
+      
       $parse_url_2 = parse_url($ROUTE);
       if (isset($parse_url_2['path'])) {
         self::$route = ltrim($parse_url_2['path'], '/');
