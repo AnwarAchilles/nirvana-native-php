@@ -110,6 +110,15 @@ class Nirvana {
     }
   }
 
+  public static function store( $name, $data='' ) {
+    if (empty($data)) {
+      return NirvanaCore::$Store[$name];
+    }else {
+      NirvanaCore::$Store[$name] = $data;
+    }
+  }
+
+
   /**
    * Set the base URL for the service.
    *

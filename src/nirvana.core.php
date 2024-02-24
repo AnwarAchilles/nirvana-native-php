@@ -27,6 +27,8 @@ class NirvanaCore {
     'baseurl'=> 'http://127.0.0.1',
   ];
 
+  public static $Store = [];
+
   public static $Service = [];
 
   
