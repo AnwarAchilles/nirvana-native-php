@@ -72,10 +72,10 @@ Nirvana::rest('GET', 'demo', function() {
 | Method & Properties | Type  | Description |
 | :-------- | :------- | :------------------------- |
 | `set` | `array` | insert/create data to store |
-| `get` | `id`|`void` | view/load data from store |
+| `get` | `id`or`void` | view/load data from store |
 | `put` | `id`, `array` | update/load data from store |
 | `del` | `id` | delete/remove data from store |
-| `find` | `field`, `value`|`void` | view data from store with specified field and value, or only field |
+| `find` | `field`, `value`or`void` | view data from store with specified field and value, or only field |
 
 #
 [![portfolio](https://ik.imagekit.io/anwarachilles/devneet-powered.svg?updatedAt=1704715329026)]('#')
