@@ -2,9 +2,9 @@
 
 
 /**
- * The core class for Nirvana.
+ * The Main class for Nirvana.
  *
- * @class NirvanaCore
+ * @class Nirvana
  */
 class Nirvana {
 
@@ -44,8 +44,8 @@ class Nirvana {
    * @throws Some_Exception_Class description of exception
    * @return Some_Return_Value
    */
-  public static function data() {
-    // NirvanaCore::$rest[]
+  public static function data( $source ) {
+    // return new NirvanaData( NirvanaCore::$Configure['basedir'].'/'.$source.'.store.json' );
   }
 
   /**
@@ -112,9 +112,10 @@ class Nirvana {
 
   public static function store( $name, $data='' ) {
     if (empty($data)) {
-      return NirvanaCore::$Store[$name];
+      return NirvanaCore::$store[$name];
     }else {
-      NirvanaCore::$Store[$name] = $data;
+      // NirvanaCore::$Store[$name] = $data;
+      NirvanaCore::$store[$name] = new NirvanaStore($name, $data);
     }
   }
 
@@ -131,6 +132,11 @@ class Nirvana {
     NirvanaCore::$Service['baseurl'] = function() {
       function baseurl() {
         return NirvanaCore::$Configure['baseurl'];
+      }
+    };
+    NirvanaCore::$Service['dd'] = function() {
+      function dd($data) {
+        echo '<pre>'; print_r($data); die; exit;
       }
     };
   }

@@ -22,12 +22,12 @@ class NirvanaCore {
   public static $data = [];
 
   public static $rest = [];
-  
+
+  public static $store = [];
+
   public static $Configure = [
     'baseurl'=> 'http://127.0.0.1',
   ];
-
-  public static $Store = [];
 
   public static $Service = [];
 
