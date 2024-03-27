@@ -29,7 +29,7 @@ class NirvanaStore {
    * @return Some_Return_Value
    */
   public function __construct( $name, $data=[] ) {
-    $this->source = NirvanaCore::$Configure['basedir'].'/'.$name.'.store.json';
+    $this->source = NirvanaCore::$configure['basedir'].'/'.$name.'.store.json';
     
     if (!isset(NirvanaCore::$store[$name])) {
       $this->state['FREE'] = TRUE;  
@@ -74,7 +74,10 @@ class NirvanaStore {
     $data = [];
     $data['time'] = time();
     $data['loop'] = $this->loop;
+    
+    $this->data = array_values($this->data);
     $data['data'] = $this->data;
+    
     if (file_put_contents($this->source, json_encode($data, JSON_PRETTY_PRINT))) {
       return true;
     }
@@ -131,8 +134,8 @@ class NirvanaStore {
         }
         return $packet;
       }else {
-        if (isset($this->data[$id])) {
-          return $this->data[$id];
+        if (self::find('id', $id)) {
+          return self::find('id', $id);
         }
       }
     }
@@ -154,9 +157,12 @@ class NirvanaStore {
         }
       }
     }else {
-      if (isset($this->data[$id])) {
-        $this->data[$id] = array_merge($this->data[$id], $data);
-        $this->save();
+      foreach ($this->data as $key=>$row) {
+        if ($id == $row['id']) {
+          $row = array_merge($row, $data);
+          $this->data[$key] = $row;
+          $this->save();
+        }
       }
     }
   }

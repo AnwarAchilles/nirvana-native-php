@@ -25,11 +25,78 @@ class NirvanaCore {
 
   public static $store = [];
 
-  public static $Configure = [
+  public static $configure = [
     'baseurl'=> 'http://127.0.0.1',
   ];
 
-  public static $Service = [];
+  public static $service = [
+    'baseurl'=> function() {
+      function baseurl($url='') {
+        return NirvanaCore::$configure['baseurl'] . $url;
+      }
+    },
+
+    'dd'=> function() {
+      function dd($data) {
+        echo '<pre>'; print_r($data); die; exit;
+      }
+    },
+
+    'segment'=> function() {
+      function segment($index) {
+        $segment = explode('/', NirvanaCore::$route);
+        if (isset($segment[$index])) {
+          return $segment[$index];
+        }else {
+          return false;
+        }
+      }
+    },
+
+    'router'=> function() {
+      function page($page) {
+        if ((preg_replace("/i=[12]/", "", NirvanaCore::$route) == $page) || (segment(0) == $page)) {
+          return true;
+        }else {
+          return false;
+        }
+      }
+    },
+
+    'force_https'=> function() {
+      function force_https() {
+        if ($_SERVER["HTTPS"] != "on") {
+          // Dapatkan URL saat ini
+          $url = "https://" . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
+          // Alihkan ke URL HTTPS
+          header("Location: $url");
+          exit();
+        } 
+      }
+    },
+
+    "anti_ddos"=> function() {
+      function anti_ddos($time) {
+        // Lakukan pengecekan jika sudah ada data Anti-DDoS
+        $currentTime = microtime(true);
+        $startTime = $_SESSION['ANTI_DDOS']['time'];
+        $timeDiffMs = ($currentTime - $startTime) * 1000; // Konversi ke milidetik
+  
+        // Jika waktu mikro kurang dari 100ms, tampilkan isi session
+        if (($timeDiffMs < $time) && ($_SESSION['ANTI_DDOS']['data'] == $_SERVER['REMOTE_ADDR'])) {
+          http_response_code(404);
+          echo 'bangke kau main ddos';
+          die; exit;
+        }
+  
+        $_SESSION['ANTI_DDOS'] = [
+          "time" => microtime(true),
+          "data" => $_SERVER['REMOTE_ADDR']
+        ];
+      }
+    }
+
+  ];
 
   
 
@@ -47,14 +114,14 @@ class NirvanaCore {
   /**
    * Sets the service.
    *
-   * This function loops through the $Service array and checks if each function exists.
+   * This function loops through the $service array and checks if each function exists.
    * If a function does not exist, it is called.
    *
    * @throws Some_Exception_Class description of exception
    * @return void
    */
-  public static function setService() {
-    foreach (self::$Service as $name => $funct) {
+  public static function setservice() {
+    foreach (self::$service as $name => $funct) {
       if (!function_exists($name)) {
         $funct();
       }
@@ -64,11 +131,11 @@ class NirvanaCore {
   /**
    * Set the HTTP method, route, and request parameters.
    *
-   * @param mixed $Configure The configuration options.
+   * @param mixed $configure The configuration options.
    * @throws Some_Exception_Class The exception that can be thrown.
    * @return void
    */
-  public static function setMethod( $Configure ) {
+  public static function setMethod( $configure ) {
     if ($_SERVER['REQUEST_METHOD']) {
       self::$request = $_SERVER['REQUEST_METHOD'];
       $ROUTE = "";
@@ -110,10 +177,10 @@ class NirvanaCore {
    * @param array $env The environment array.
    */
   public static function setResponse( $env ) {
-    $Configure = $env['Configure'];
+    $configure = $env['configure'];
 
-    if ($Configure['development']) {
-      self::$response['[+] Baseurl'] = $Configure['baseurl'];
+    if ($configure['development']) {
+      self::$response['[+] Baseurl'] = $configure['baseurl'];
       self::$response['[+] Request'] = self::$request;
       self::$response['[+] Endpoint'] = self::$route;
       self::$response['[+] Method'] = self::$method;

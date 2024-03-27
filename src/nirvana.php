@@ -16,7 +16,8 @@ class Nirvana {
    * @return void
    */
   public static function environment( $env ) {
-    NirvanaCore::$Configure = $env['Configure'];
+    NirvanaCore::$configure = ($env['configure']) ? $env['configure'] : [];
+    NirvanaCore::$service = ($env['service']) ? $env['service'] : [];
 
     self::_service();
 
@@ -45,7 +46,7 @@ class Nirvana {
    * @return Some_Return_Value
    */
   public static function data( $source ) {
-    // return new NirvanaData( NirvanaCore::$Configure['basedir'].'/'.$source.'.store.json' );
+    // return new NirvanaData( NirvanaCore::$configure['basedir'].'/'.$source.'.store.json' );
   }
 
   /**
@@ -123,18 +124,18 @@ class Nirvana {
   /**
    * Set the base URL for the service.
    *
-   * This function sets the base URL for the service by assigning a closure to the 'baseurl' key in the NirvanaCore::$Service array. The closure returns the value of the 'baseurl' key in the NirvanaCore::$Configure array.
+   * This function sets the base URL for the service by assigning a closure to the 'baseurl' key in the NirvanaCore::$service array. The closure returns the value of the 'baseurl' key in the NirvanaCore::$configure array.
    *
    * @throws None
    * @return None
    */
   public static function _service() {
-    NirvanaCore::$Service['baseurl'] = function() {
-      function baseurl() {
-        return NirvanaCore::$Configure['baseurl'];
+    NirvanaCore::$service['baseurl'] = function() {
+      function baseurl($url='') {
+        return NirvanaCore::$configure['baseurl'] . $url;
       }
     };
-    NirvanaCore::$Service['dd'] = function() {
+    NirvanaCore::$service['dd'] = function() {
       function dd($data) {
         echo '<pre>'; print_r($data); die; exit;
       }
