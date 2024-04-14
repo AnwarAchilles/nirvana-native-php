@@ -1,6 +1,5 @@
 <?php
 
-
 /**
  * The Handler class for NirvanaStore.
  *

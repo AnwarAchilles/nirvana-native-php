@@ -16,8 +16,8 @@ class Nirvana {
    * @return void
    */
   public static function environment( $env ) {
-    NirvanaCore::$configure = ($env['configure']) ? $env['configure'] : [];
-    NirvanaCore::$service = ($env['service']) ? $env['service'] : [];
+    NirvanaCore::$configure = (isset($env['configure'])) ? $env['configure'] : [];
+    NirvanaCore::$service = (isset($env['service'])) ? $env['service'] : [];
 
     self::_service();
 
@@ -138,6 +138,56 @@ class Nirvana {
     NirvanaCore::$service['dd'] = function() {
       function dd($data) {
         echo '<pre>'; print_r($data); die; exit;
+      }
+    };
+    NirvanaCore::$service['segment'] = function() {
+      function segment($index) {
+        $segment = explode('/', NirvanaCore::$route);
+        if (isset($segment[$index])) {
+          return $segment[$index];
+        }else {
+          return false;
+        }
+      }
+    };
+    NirvanaCore::$service['router'] = function() {
+      function router($page) {
+        if ((preg_replace("/i=[12]/", "", NirvanaCore::$route) == $page) || (segment(0) == $page)) {
+          return true;
+        }else {
+          return false;
+        }
+      }
+    };
+    NirvanaCore::$service['force_https'] = function() {
+      function force_https() {
+        if ($_SERVER["HTTPS"] != "on") {
+          // Dapatkan URL saat ini
+          $url = "https://" . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
+          // Alihkan ke URL HTTPS
+          header("Location: $url");
+          exit();
+        } 
+      }
+    };
+    NirvanaCore::$service['anti_ddos'] = function() {
+      function anti_ddos($time) {
+        // Lakukan pengecekan jika sudah ada data Anti-DDoS
+        $currentTime = microtime(true);
+        $startTime = $_SESSION['ANTI_DDOS']['time'];
+        $timeDiffMs = ($currentTime - $startTime) * 1000; // Konversi ke milidetik
+
+        // Jika waktu mikro kurang dari 100ms, tampilkan isi session
+        if (($timeDiffMs < $time) && ($_SESSION['ANTI_DDOS']['data'] == $_SERVER['REMOTE_ADDR'])) {
+          http_response_code(404);
+          echo 'bangke kau main ddos';
+          die; exit;
+        }
+
+        $_SESSION['ANTI_DDOS'] = [
+          "time" => microtime(true),
+          "data" => $_SERVER['REMOTE_ADDR']
+        ];
       }
     };
   }
