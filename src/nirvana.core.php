@@ -112,26 +112,6 @@ class NirvanaCore {
         } 
       }
     };
-    NirvanaCore::$service['anti_ddos'] = function() {
-      function anti_ddos($time) {
-        // Lakukan pengecekan jika sudah ada data Anti-DDoS
-        $currentTime = microtime(true);
-        $startTime = $_SESSION['ANTI_DDOS']['time'];
-        $timeDiffMs = ($currentTime - $startTime) * 1000; // Konversi ke milidetik
-
-        // Jika waktu mikro kurang dari 100ms, tampilkan isi session
-        if (($timeDiffMs < $time) && ($_SESSION['ANTI_DDOS']['data'] == $_SERVER['REMOTE_ADDR'])) {
-          http_response_code(404);
-          echo 'bangke kau main ddos';
-          die; exit;
-        }
-
-        $_SESSION['ANTI_DDOS'] = [
-          "time" => microtime(true),
-          "data" => $_SERVER['REMOTE_ADDR']
-        ];
-      }
-    };
     NirvanaCore::$service['not_found'] = function() {
       function not_found() {
         header('Content-Type: application/json');

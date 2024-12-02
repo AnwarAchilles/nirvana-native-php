@@ -7,3 +7,4 @@
 - Update add parameter function like this rest('post', 'api/product/{id}', function($id) {});
 - Update method() return value
 - Update add sanitize on method request
+- Remove function anti_ddos
