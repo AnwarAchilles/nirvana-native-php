@@ -1,0 +1,9 @@
+
+
+# version 1.2.0
+- Update aliases in environment configuration as 'alias'
+- Update error handling if inner rest is error will return json
+- Update change store to session to straight line stlye
+- Update add parameter function like this rest('post', 'api/product/{id}', function($id) {});
+- Update method() return value
+- Update add sanitize on method request

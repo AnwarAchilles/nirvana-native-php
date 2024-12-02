@@ -7,7 +7,7 @@
  */
 class NirvanaCore {
 
-  public static $version = 1.1;
+  public static $version = 1.2;
   
   public static $request = "";
   
@@ -27,6 +27,7 @@ class NirvanaCore {
 
   public static $configure = [
     'baseurl'=> 'http://127.0.0.1',
+    'session'=> true
   ];
 
   public static $service = [];
@@ -54,11 +55,100 @@ class NirvanaCore {
    * @return void
    */
   public static function setservice() {
+    NirvanaCore::defaultService();
     foreach (self::$service as $name => $funct) {
       if (!function_exists($name)) {
         $funct();
       }
     }
+  }
+
+  /**
+   * Sets the default services.
+   *
+   * This function sets the default services like baseurl, dd, segment, router, force_https, and anti_ddos.
+   *
+   * @throws None
+   * @return void
+   */
+  public static function defaultService() {
+    NirvanaCore::$service['baseurl'] = function() {
+      function baseurl($url='') {
+        return NirvanaCore::$configure['baseurl'] . '/' . $url;
+      }
+    };
+    NirvanaCore::$service['dd'] = function() {
+      function dd($data) {
+        echo '<pre>'; print_r($data); die; exit;
+      }
+    };
+    NirvanaCore::$service['segment'] = function() {
+      function segment($index) {
+        $segment = explode('/', NirvanaCore::$route);
+        if (isset($segment[$index])) {
+          return $segment[$index];
+        }else {
+          return false;
+        }
+      }
+    };
+    NirvanaCore::$service['router'] = function() {
+      function router($page) {
+        if ((preg_replace("/i=[12]/", "", NirvanaCore::$route) == $page) || (segment(0) == $page)) {
+          return true;
+        }else {
+          return false;
+        }
+      }
+    };
+    NirvanaCore::$service['force_https'] = function() {
+      function force_https() {
+        if ($_SERVER["HTTPS"] != "on") {
+          // Dapatkan URL saat ini
+          $url = "https://" . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
+          // Alihkan ke URL HTTPS
+          header("Location: $url");
+          exit();
+        } 
+      }
+    };
+    NirvanaCore::$service['anti_ddos'] = function() {
+      function anti_ddos($time) {
+        // Lakukan pengecekan jika sudah ada data Anti-DDoS
+        $currentTime = microtime(true);
+        $startTime = $_SESSION['ANTI_DDOS']['time'];
+        $timeDiffMs = ($currentTime - $startTime) * 1000; // Konversi ke milidetik
+
+        // Jika waktu mikro kurang dari 100ms, tampilkan isi session
+        if (($timeDiffMs < $time) && ($_SESSION['ANTI_DDOS']['data'] == $_SERVER['REMOTE_ADDR'])) {
+          http_response_code(404);
+          echo 'bangke kau main ddos';
+          die; exit;
+        }
+
+        $_SESSION['ANTI_DDOS'] = [
+          "time" => microtime(true),
+          "data" => $_SERVER['REMOTE_ADDR']
+        ];
+      }
+    };
+    NirvanaCore::$service['not_found'] = function() {
+      function not_found() {
+        header('Content-Type: application/json');
+        echo json_encode(NirvanaCore::$response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        die;
+      }
+    };
+    NirvanaCore::$service['is_similar_pattern'] = function() {
+      function is_similar_pattern($string1, $string2) {
+        // Mengganti {id} dengan pola yang bisa diterima, misalnya \d+ (angka)
+        $pattern = preg_quote($string1, '/');  // Menyaring karakter-karakter khusus di dalam string
+        $pattern = str_replace('\{id\}', '\d+', $pattern);  // Ganti {id} dengan angka
+    
+        // Cek apakah string kedua cocok dengan pola yang telah dibuat
+        return preg_match("/^$pattern$/", $string2);
+      }
+    };
   }
 
   /**
@@ -112,14 +202,129 @@ class NirvanaCore {
   public static function setResponse( $env ) {
     $configure = $env['configure'];
 
+    self::doSanitizeMethod();
+
     if ($configure['development']) {
-      self::$response['[+] Baseurl'] = $configure['baseurl'];
+      self::$response['[+] Referrer'] = (!empty($_SERVER['HTTP_REFERER'])) ? $_SERVER['HTTP_REFERER'] : '';
       self::$response['[+] Request'] = self::$request;
       self::$response['[+] Endpoint'] = self::$route;
       self::$response['[+] Method'] = self::$method;
       self::$response['[+] Version'] = self::$version;
     }
     self::$response['state'] = 200;
+  }
+  
+  /**
+   * Sets custom error and exception handlers.
+   *
+   * This function sets a custom error handler that converts PHP errors into
+   * ErrorException, and a custom exception handler that formats the exception
+   * details into a JSON response and outputs it.
+   *
+   * @throws ErrorException if a PHP error occurs.
+   * @return void
+   */
+  public static function errorHandler() {
+    set_error_handler(function ($errno, $errstr, $errfile, $errline) {
+      throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
+    });
+    
+    set_exception_handler(function ($exception) {
+      NirvanaCore::$response['error'] = [
+          'status' => 'error',
+          'message' => $exception->getMessage(),
+          'file' => $exception->getFile(),
+          'line' => $exception->getLine()
+      ];
+      header('Content-Type: application/json');
+      http_response_code(500);
+      NirvanaCore::$response['state'] = 500;
+      echo json_encode(NirvanaCore::$response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+      die;
+    });
+  }
+
+
+  /**
+   * Extracts the id parameter from the given $pattern and $value.
+   *
+   * @param string $pattern The pattern to extract the id from.
+   * @param string $value The value to extract the id from.
+   *
+   * @return array|null The extracted id parameter, or null if the pattern and value do not match.
+   */
+  public static function extractId($pattern, $value) {
+    // Menghapus karakter { dan } pada pattern agar bisa dipisahkan
+    preg_match_all('/\{(\w+)\}/', $pattern, $matches);
+
+    // Memecah pola menjadi array berdasarkan "/"
+    $patternParts = explode('/', $pattern);
+    $valueParts = explode('/', $value);
+
+    // Jika jumlah bagian pattern dan value tidak sama, berarti tidak cocok
+    if (count($patternParts) !== count($valueParts)) {
+        return null;
+    }
+
+    // Mengumpulkan nilai parameter dinamis dalam array
+    $params = [];
+    foreach ($patternParts as $index => $part) {
+        // Jika pola berisi {parameter}, maka ambil nilai yang ada pada value
+        if (preg_match('/\{(\w+)\}/', $part, $matches)) {
+            $params[$matches[1]] = $valueParts[$index];
+        }
+    }
+
+    return $params;
+  }
+
+  /**
+   * Sanitizes all the values in the `method` array and stores it back in the same array.
+   *
+   * This method is used to sanitize all the method values in one go, instead of
+   * sanitizing each value individually.
+   *
+   * @return void
+   */
+  public static function doSanitizeMethod() {
+    foreach (self::$method as $key => $value) {
+      self::$method[$key] = self::sanitizeMethod($value);
+    }
+  }
+
+  /**
+   * Sanitizes a given input string to prevent various types of attacks
+   *
+   * This method is used to sanitize all the method values in one go, instead of
+   * sanitizing each value individually. It trims the input string, removes
+   * unwanted characters, prevents XSS by converting HTML characters to entities,
+   * and removes non-printable ASCII characters. If the input is a number, it
+   * converts the input to an integer.
+   *
+   * @param string $input The input string to sanitize.
+   *
+   * @return string The sanitized input string.
+   */
+  public static function sanitizeMethod($input) {
+    // Trim: Menghapus spasi ekstra di awal dan akhir string
+    $input = trim($input);
+    
+    // Menghindari karakter-karakter berbahaya dalam nama file (jika digunakan untuk file upload)
+    $input = preg_replace('/[^a-zA-Z0-9_\-\.@]/', '', $input);  // Menambahkan @ untuk email
+
+    // Mencegah XSS dengan mengonversi karakter-karakter HTML menjadi entitas HTML
+    $input = htmlspecialchars($input, ENT_QUOTES, 'UTF-8');
+
+    // Menghapus karakter-karakter berbahaya (misal: karakter kontrol atau karakter yang tidak diinginkan)
+    $input = preg_replace('/[^\x20-\x7E]/', '', $input); // Menghapus karakter non-printable ASCII
+
+    // Jika input merupakan angka, pastikan hanya angka yang diterima
+    // (misalnya jika input adalah ID atau nomor telepon)
+    if (is_numeric($input)) {
+        $input = (int)$input; // mengonversi input menjadi integer
+    }
+
+    return $input;
   }
 
 }

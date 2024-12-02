@@ -16,26 +16,50 @@ class Nirvana {
    * @return void
    */
   public static function environment( $env ) {
-    NirvanaCore::$configure = (isset($env['configure'])) ? $env['configure'] : [];
-    NirvanaCore::$service = (isset($env['service'])) ? $env['service'] : [];
+    NirvanaCore::$data = array_merge(NirvanaCore::$data, (isset($env['data'])) ? $env['data'] : []);
+    NirvanaCore::$configure = array_merge(NirvanaCore::$configure, (isset($env['configure'])) ? $env['configure'] : []);
+    NirvanaCore::$service = array_merge(NirvanaCore::$service, (isset($env['service'])) ? $env['service'] : []);
 
-    self::_service();
+    // set session
+    if (NirvanaCore::$configure['session']) {
+      session_start();
+    }
 
     NirvanaCore::setMethod( $env );
     NirvanaCore::setResponse( $env );
     NirvanaCore::setService( $env );
+
+    // set aliases instance
+    if (isset(NirvanaCore::$configure['alias'])) {
+      class_alias('Nirvana', NirvanaCore::$configure['alias']);
+    }
   }
 
+
   /**
-   * Sends a JSON response with the content of NirvanaCore::$response
-   * and stops the execution of the script.
+   * Prints the documentation for the Nirvana API.
    *
-   * @throws None
-   * @return None
+   * The documentation displays a list of all the available endpoints, along
+   * with their respective URLs.
+   *
+   * @return void
    */
-  public static function ifNotFound() {
-    header('Content-Type: application/json');
-    echo json_encode(NirvanaCore::$response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+  public static function documentation() {
+    echo '<h1 style="margin-bottom:0">Nirvana Documentation</h1>';
+    echo '<p style="margin-top:0">Version - '.NirvanaCore::$version.'</p>';
+    echo '<hr>';
+    
+    foreach (NirvanaCore::$rest as $key => $value) {
+      echo '<fieldset>';
+      echo '<legend>'.$key.'</legend>';
+      echo '<ol type="1">';
+      foreach ($value as $k => $v) {
+        echo "<li>".baseurl($k)."</li>";
+      }
+      echo "</ol>";
+      echo '</fieldset>';
+    }
+
     die;
   }
 
@@ -45,16 +69,24 @@ class Nirvana {
    * @throws Some_Exception_Class description of exception
    * @return Some_Return_Value
    */
-  public static function data( $source ) {
-    // return new NirvanaData( NirvanaCore::$configure['basedir'].'/'.$source.'.store.json' );
+  public static function data( $name = null, $data = null ) {
+    if (empty($data)) {
+      if (empty($name)) {
+        return (object) NirvanaCore::$data;
+      }else {
+        return (isset(NirvanaCore::$data[$name])) ? NirvanaCore::$data[$name] : null;
+      }
+    }else {
+      NirvanaCore::$data[$name] = $data;
+    }
   }
 
   /**
-   * Sets the HTTP response code and updates the state of the response.
+   * Sets the HTTP state code and updates the state of the state.
    *
-   * @param int $code The HTTP response code to set.
+   * @param int $code The HTTP state code to set.
    */
-  public static function response( $code ) {
+  public static function state( $code ) {
     http_response_code($code);
     NirvanaCore::$response['state'] = $code;
   }
@@ -66,11 +98,15 @@ class Nirvana {
    * @throws Some_Exception_Class description of exception
    * @return Some_Return_Value
    */
-  public static function method($key) {
+  public static function method($key, $value = false) {
     if (isset(NirvanaCore::$method[$key])) {
-      return NirvanaCore::$method[$key];
+      if (empty(NirvanaCore::$method[$key])) {
+        NirvanaCore::$method[$key] = $value;
+      }
+      return NirvanaCore::sanitizeMethod(NirvanaCore::$method[$key]);
     }else {
-      return false;
+      NirvanaCore::$method[$key] = $value;
+      return NirvanaCore::sanitizeMethod($value);
     }
   }
 
@@ -97,99 +133,72 @@ class Nirvana {
    */
   public static function rest( $request, $name, $controller ) {
     NirvanaCore::$rest[$request][$name] = $controller;
-
     if (NirvanaCore::$request==$request) {
-      if (NirvanaCore::$route == $name) {
-        $response = $controller();
-        if (is_array($response)) {
-          NirvanaCore::$response['data'] = $response;
+      if (!empty(NirvanaCore::$route)) {
+        if (is_similar_pattern($name, NirvanaCore::$route)) {
+          NirvanaCore::errorHandler();
           header('Content-Type: application/json');
-          echo json_encode(NirvanaCore::$response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-          die;
+          $params = NirvanaCore::extractId($name, NirvanaCore::$route);
+          $response = call_user_func_array($controller, $params);
+          if (is_array($response)) {
+            NirvanaCore::$response['data'] = $response;
+            echo json_encode(NirvanaCore::$response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            die;
+          }
         }
       }
     }
   }
-
-  public static function store( $name, $data='' ) {
-    if (empty($data)) {
-      return NirvanaCore::$store[$name];
-    }else {
-      // NirvanaCore::$Store[$name] = $data;
-      NirvanaCore::$store[$name] = new NirvanaStore($name, $data);
-    }
-  }
-
 
   /**
-   * Set the base URL for the service.
+   * Manages session-based storage for a given store name.
    *
-   * This function sets the base URL for the service by assigning a closure to the 'baseurl' key in the NirvanaCore::$service array. The closure returns the value of the 'baseurl' key in the NirvanaCore::$configure array.
+   * Initializes a session store if it does not exist and provides methods
+   * to set, check, retrieve, delete, and clear data within the session store.
    *
-   * @throws None
-   * @return None
+   * @param string $storeName The name of the session store to manage.
+   * @return string The class name of the dynamically created store.
    */
-  public static function _service() {
-    NirvanaCore::$service['baseurl'] = function() {
-      function baseurl($url='') {
-        return NirvanaCore::$configure['baseurl'] . $url;
+  public static function store( $storeName ) {
+    $store = new class {
+      public static $name = "";
+      public static function init( $name ) {
+        self::$name = $name;
+        if (!isset($_SESSION[self::$name])) {
+          $_SESSION[self::$name] = [];
+        }
       }
-    };
-    NirvanaCore::$service['dd'] = function() {
-      function dd($data) {
-        echo '<pre>'; print_r($data); die; exit;
+      public static function set($name, $data) {
+        $_SESSION[self::$name][$name] = $data;
       }
-    };
-    NirvanaCore::$service['segment'] = function() {
-      function segment($index) {
-        $segment = explode('/', NirvanaCore::$route);
-        if (isset($segment[$index])) {
-          return $segment[$index];
+      public static function has($name) {
+        return isset($_SESSION[self::$name][$name]);
+      }
+      public static function get($name=null) {
+        if (empty($name)) {
+          return $_SESSION[self::$name];
         }else {
-          return false;
+          return $_SESSION[self::$name][$name];
         }
       }
-    };
-    NirvanaCore::$service['router'] = function() {
-      function router($page) {
-        if ((preg_replace("/i=[12]/", "", NirvanaCore::$route) == $page) || (segment(0) == $page)) {
-          return true;
-        }else {
-          return false;
-        }
+      public static function delete($name) {
+        unset($_SESSION[self::$name][$name]);
+      }
+      public static function clear() {
+        unset($_SESSION[self::$name]);
+        return true;
       }
     };
-    NirvanaCore::$service['force_https'] = function() {
-      function force_https() {
-        if ($_SERVER["HTTPS"] != "on") {
-          // Dapatkan URL saat ini
-          $url = "https://" . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
-          // Alihkan ke URL HTTPS
-          header("Location: $url");
-          exit();
-        } 
-      }
-    };
-    NirvanaCore::$service['anti_ddos'] = function() {
-      function anti_ddos($time) {
-        // Lakukan pengecekan jika sudah ada data Anti-DDoS
-        $currentTime = microtime(true);
-        $startTime = $_SESSION['ANTI_DDOS']['time'];
-        $timeDiffMs = ($currentTime - $startTime) * 1000; // Konversi ke milidetik
+    $store::init($storeName);
 
-        // Jika waktu mikro kurang dari 100ms, tampilkan isi session
-        if (($timeDiffMs < $time) && ($_SESSION['ANTI_DDOS']['data'] == $_SERVER['REMOTE_ADDR'])) {
-          http_response_code(404);
-          echo 'bangke kau main ddos';
-          die; exit;
-        }
+    return $store::class;
 
-        $_SESSION['ANTI_DDOS'] = [
-          "time" => microtime(true),
-          "data" => $_SERVER['REMOTE_ADDR']
-        ];
-      }
-    };
+    // old version
+    // if (empty($data)) {
+    //   return NirvanaCore::$store[$name];
+    // }else {
+    //   NirvanaCore::$store[$name] = new NirvanaStore($name, $data);
+    // }
   }
 
 }
