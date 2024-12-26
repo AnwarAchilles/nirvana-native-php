@@ -289,21 +289,20 @@ class NirvanaCore {
     // Trim: Menghapus spasi ekstra di awal dan akhir string
     $input = trim($input);
     
-    // Menghindari karakter-karakter berbahaya dalam nama file (jika digunakan untuk file upload)
-    $input = preg_replace('/[^a-zA-Z0-9_\-\.@]/', '', $input);  // Menambahkan @ untuk email
-
+    // Menghindari karakter-karakter berbahaya tanpa menghapus spasi
+    $input = preg_replace('/[^a-zA-Z0-9_\-\.@\s]/', '', $input); // Menambahkan \s untuk mempertahankan spasi
+    
     // Mencegah XSS dengan mengonversi karakter-karakter HTML menjadi entitas HTML
     $input = htmlspecialchars($input, ENT_QUOTES, 'UTF-8');
-
-    // Menghapus karakter-karakter berbahaya (misal: karakter kontrol atau karakter yang tidak diinginkan)
-    $input = preg_replace('/[^\x20-\x7E]/', '', $input); // Menghapus karakter non-printable ASCII
-
+  
+    // Menghapus karakter-karakter non-printable ASCII
+    $input = preg_replace('/[^\x20-\x7E]/', '', $input); // Tetap mempertahankan spasi (\x20)
+  
     // Jika input merupakan angka, pastikan hanya angka yang diterima
-    // (misalnya jika input adalah ID atau nomor telepon)
     if (is_numeric($input)) {
-        $input = (int)$input; // mengonversi input menjadi integer
+      $input = (int)$input; // Mengonversi input menjadi integer
     }
-
+  
     return $input;
   }
 
